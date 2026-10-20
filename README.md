@@ -19,7 +19,8 @@ invoices, each checked against its page, then rolled up into GSTR-1 workings.*
 
 ## What's in it
 
-- **574 commits**, from June 21 to October 17, 2026
+- **574 commits**, from June 21 to October 17, 2026. Before that, it started on
+  May 26 as an app for service businesses in a separate repository.
 - **About 66,000 lines of Elixir** and **39,000 lines of TypeScript**
 - **1,779 Elixir tests** in about 47,000 lines
 - **81 database migrations** on PostgreSQL
