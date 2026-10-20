@@ -19,13 +19,12 @@ invoices, each checked against its page, then rolled up into GSTR-1 workings.*
 
 ## What's in it
 
-| | |
-| --- | --- |
-| Commits | 574, from June 21 to October 17, 2026 |
-| Application code | about 66,000 lines of Elixir and 39,000 lines of TypeScript |
-| Tests | 1,779 Elixir tests in about 47,000 lines |
-| Database | 81 migrations on PostgreSQL |
-| Tally connector | a separate Windows app in C#, [nila-connector](https://github.com/benzene73/nila-connector) |
+- **574 commits**, from June 21 to October 17, 2026
+- **About 66,000 lines of Elixir** and **39,000 lines of TypeScript**
+- **1,779 Elixir tests** in about 47,000 lines
+- **81 database migrations** on PostgreSQL
+- **A Windows connector for Tally** in C#, in its own repository:
+  [nila-connector](https://github.com/benzene73/nila-connector)
 
 ## The product
 
@@ -41,8 +40,6 @@ The month's invoices roll up into the GSTR-1 sections, with an Excel working the
 senior can check and keep, and a JSON file for the GST portal.
 
 ![GSTR-1 summary for August with 13 B2B invoices prepared, and Excel and JSON downloads](docs/images/gstr1-summary.webp)
-
-![Sales register listing the month's invoices with taxable value, GST and review status](docs/images/sales-register.webp)
 
 **Tally.** Many firms keep everything in Tally, so reviewed invoices can be
 posted there as vouchers through a small Windows connector that talks to the
