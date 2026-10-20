@@ -9,6 +9,7 @@ Start with the current product and code map, then open a focused guide.
 - [Model cost baseline](cost/model-costs.md) — dated production usage, token, and inference-cost measurements.
 - [Decisions](decisions.md) — why we use this structure, including transactions and storage.
 - [Design guide](design/DESIGN.md) — start here for UI work; it routes to the detailed guides.
+- [Operations](operations.md) — production storage and WhatsApp setup.
 - [Demo script](demo-script.md) and [runbook](demo-runbook.md) — presentation flow and dated rehearsal details.
 
 Coding conventions live in [AGENTS.md](../AGENTS.md).

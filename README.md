@@ -1,31 +1,84 @@
 # Nila
 
-Nila is the AI accountant for Indian CA firms, starting with GST. A Phoenix + React
-monolith.
+Nila is an AI accountant for Indian CA firms, starting with GST. A firm uploads a
+client's bills for the month, Nila reads every invoice, puts each one beside the
+original page for checking, and prepares the Excel workings and GSTR-1 file the
+firm would otherwise type up by hand.
 
-**First product: sales bills → Excel workings for GSTR-1.** Nila prepares the file
-a junior would otherwise type and assemble. The accountant resolves exceptions;
-the senior checks the working, and the firm retains it as evidence for its filing.
+I built it on my own from June to October 2026, with a lot of help from coding
+agents. It ran in production at [nila.tax](https://nila.tax/) and worked on real
+bills, and I paused it on October 8 before any firm adopted it.
+[Why I stopped](https://vasanthk.pages.dev/writing/why-i-stopped-nila/) ·
+[Case study](https://vasanthk.pages.dev/work/nila/) ·
+[How the extraction works](https://vasanthk.pages.dev/writing/invoice-extraction/)
 
-See [the current objective and customer evidence](docs/prd.md#current-objective)
-for why this is the first product, and [the sales code guide](lib/nila/gst/sales/README.md)
-for how it is organized. Tally, WhatsApp, banking, and purchase workflows also
-exist in the repository; they do not define the current product scope.
+![A 13-page PDF of scanned bills read into 13 invoices, each checked against its source page, then rolled up into GSTR-1 workings](docs/images/nila-review.gif)
+
+*A real month of bills from my parents' business: one 13-page PDF read into 13
+invoices, each checked against its page, then rolled up into GSTR-1 workings.*
+
+## What's in it
+
+| | |
+| --- | --- |
+| Commits | 574, from June 21 to October 17, 2026 |
+| Application code | about 66,000 lines of Elixir and 39,000 lines of TypeScript |
+| Tests | 1,779 Elixir tests in about 47,000 lines |
+| Database | 81 migrations on PostgreSQL |
+| Tally connector | a separate Windows app in C#, [nila-connector](https://github.com/benzene73/nila-connector) |
+
+## The product
+
+**Sales and GSTR-1.** Nila splits a PDF into invoices before reading them, so a
+continuation page doesn't become a bill of its own. Each invoice is read into
+structured fields with the page it came from, and the accountant reviews it
+beside the original. Amounts printed on the bill stay separate from amounts Nila
+calculates, so a mismatch shows up instead of being quietly fixed.
 
 ![Invoice review showing the original bill beside extracted items, taxes, and matching totals](docs/images/invoice-review.webp)
 
-*Review extracted sales invoices against the original bills, with tax calculations and totals checked side by side.*
+The month's invoices roll up into the GSTR-1 sections, with an Excel working the
+senior can check and keep, and a JSON file for the GST portal.
 
-## Stack
+![GSTR-1 summary for August with 13 B2B invoices prepared, and Excel and JSON downloads](docs/images/gstr1-summary.webp)
 
-- Phoenix 1.8 backend; React, TypeScript, shadcn and Vite frontend
-- Ecto + PostgreSQL (source of truth)
-- Oban (extraction and derivation jobs)
-- Tailwind CSS and shared shadcn components in `frontend/src/components/ui/`
-- Req/Jason for HTTP/JSON
-- `Nila.Storage` — local disk in dev/test, private Cloudflare R2 in production
+![Sales register listing the month's invoices with taxable value, GST and review status](docs/images/sales-register.webp)
 
-## Local setup
+**Tally.** Many firms keep everything in Tally, so reviewed invoices can be
+posted there as vouchers through a small Windows connector that talks to the
+TallyPrime running on the firm's computer.
+
+![Tally entries tab showing all 13 invoices posted to Tally](docs/images/tally-entries.webp)
+
+![Nila Connector on Windows, linked and connected to TallyPrime](docs/images/tally-connector.webp)
+
+**Purchases and ITC.** Nila fetches GSTR-2B, compares it with the purchase
+register, and lets the accountant decide the input tax credit for each invoice:
+claim this month, claim later, or don't claim.
+
+![Purchase review with the GSTR-2B invoice details and ITC treatment choices](docs/images/purchase-review.webp)
+
+There's also GST notice checking across all clients, bills arriving by WhatsApp
+and email with reminders to clients who haven't sent theirs, bank statement
+import into Tally, and a simple invoicing app for small businesses that shares
+their sales with their CA.
+
+## How it's built
+
+- Phoenix 1.8 and PostgreSQL. Oban runs extraction and other background jobs.
+- React, TypeScript, shadcn and Vite on the front end, served by Phoenix.
+- The AI models only return structured readings of the bills. Calculations,
+  validation, corrections and the return itself live in Elixir code that's tested.
+- Extraction changes were measured against an evaluation corpus of real bills;
+  see [`eval/`](eval/README.md).
+- Production runs on AWS in Hyderabad, deployed from GitHub Actions through
+  Systems Manager, with documents in a private Cloudflare R2 bucket.
+
+More detail is in [`docs/`](docs/README.md): the [architecture](docs/architecture.md),
+the [decisions](docs/decisions.md) behind it, and the
+[product objective and customer evidence](docs/prd.md#current-objective).
+
+## Run it locally
 
 ```bash
 # dev.exs requires local PostgreSQL on localhost:5432.
@@ -33,7 +86,7 @@ mix setup
 mix phx.server
 ```
 
-Open http://localhost:4000.
+Open http://localhost:4000 and use the development quick login.
 
 ```bash
 mix test
@@ -41,90 +94,14 @@ mix ecto.reset
 mix precommit
 ```
 
-## Production object storage
-
-Production uses the private `nila-documents` Cloudflare R2 bucket through the
-S3-compatible API. Create an R2 API token with Object Read & Write permission, scope it
-only to `nila-documents`, and leave public access and custom domains disabled. Object
-Read & Write includes the read, upload, and delete operations Nila needs.
-
-Set these only in the production runtime environment:
-
-```env
-R2_ENDPOINT=https://0b6491b35807b48232b57646af4e7eeb.r2.cloudflarestorage.com
-R2_BUCKET=nila-documents
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-```
-
-The normal test suite always uses `Nila.Storage.Local`. To explicitly run the live R2
-put/get/metadata/delete smoke test, export the four variables above and run:
-
-```bash
-mix test --include r2_integration test/nila/storage/r2_integration_test.exs
-```
-
-## WhatsApp provisioning
-
-Configure the Meta webhook as `https://HOST/webhooks/whatsapp` and set
-`WHATSAPP_APP_SECRET` and `WHATSAPP_VERIFY_TOKEN` in the runtime environment. Outbound
-chasing additionally needs `WHATSAPP_CHASE_TEMPLATE`, `WHATSAPP_COMPLETENESS_TEMPLATE`,
-and a 32-byte-or-longer `WHATSAPP_COMPLETENESS_SECRET`.
-
-For self-service onboarding, create a Facebook Login for Business configuration using
-Embedded Signup v4 and the Cloud API products. Configure:
-
-```env
-WHATSAPP_APP_ID=
-WHATSAPP_APP_SECRET=
-WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID=
-WHATSAPP_GRAPH_URL=https://graph.facebook.com/v26.0
-```
-
-The Connect WhatsApp button appears under Settings → Connectors once the app ID, app
-secret, and config ID are present; any customer business may then authorise. Set the
-optional `WHATSAPP_EMBEDDED_SIGNUP_ALLOWED_BUSINESS_ID` to pin signup to a single Meta
-business during controlled testing, where the person completing signup holds a role on
-Nila's Meta app and full control of that business. Leave it unset in production and for
-Meta App Review, or the reviewer's own business is rejected. Nila exchanges Meta's short-lived code server-side, verifies the
-business/WABA/phone through Graph, subscribes the app to the WABA, registers the number,
-and encrypts the resulting BISU token and generated two-step-verification PIN. A local
-disconnect erases those credentials and requires Embedded Signup again; it does not
-unsubscribe the whole WABA because that subscription may serve multiple phone numbers.
-Use Verify readiness for token/phone/subscription checks. Confirm receiving with a
-user-initiated message to the connected number; Nila never sends an unsolicited test
-message.
-
-The Mix task remains the operator recovery path. Connect or rotate a firm's WhatsApp
-Cloud API phone-number ID without putting the access token in command arguments:
-
-```bash
-export WHATSAPP_ACCESS_TOKEN="..."
-mix nila.whatsapp.connect \
-  --org-id 42 \
-  --phone-number-id 123456789 \
-  --label "Firm WhatsApp"
-```
-
-Production releases do not include Mix. With `WHATSAPP_ACCESS_TOKEN` exported in the
-operator shell, run:
-
-```bash
-bin/nila eval 'IO.inspect(Nila.Release.provision_whatsapp(%{org_id: 42, phone_number_id: "123456789", label: "Firm WhatsApp"}))'
-```
-
-The token is stored through `Nila.EncryptedMap`. A phone-number ID may belong to only one
-Nila organisation.
+Production storage and WhatsApp setup are in [docs/operations.md](docs/operations.md).
 
 ## Layout
 
-- `lib/nila/` — business contexts. `gst/` is the core: extraction, recon, flags,
-  resolutions, sign-offs, dumps, returns. Plus accounts, orgs, clients, documents,
-  workflows, audits, integrations, storage.
+- `lib/nila/` — business contexts. `gst/` is the core: extraction, review, checks,
+  sign-offs and returns. Plus accounts, orgs, clients, documents, notices, banking,
+  Tally sync and storage.
 - `lib/nila_web/` — controllers, APIs and web plumbing.
-- `docs/` — architecture, decisions, design system, PRD.
-
-## Deliberately not built (yet)
-
-Amendments (filed is immutable; the amendment tables for later periods don't exist),
-cross-month ITC carry, QRMP, photo/image intake. Pulled by real usage, not pushed.
+- `frontend/` — the React app.
+- `eval/` — extraction evaluations.
+- `docs/` — architecture, decisions, design and product notes.
