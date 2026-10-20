@@ -6,7 +6,7 @@ original page for checking, and prepares the Excel workings and GSTR-1 file the
 firm would otherwise type up by hand.
 
 I built it on my own from June to October 2026, with a lot of help from coding
-agents. It ran in production at [nila.tax](https://nila.tax/) and worked on real
+agents. It runs in production at [nila.tax](https://nila.tax/) and worked on real
 bills, and I paused it on October 8 before any firm adopted it.
 [Why I stopped](https://vasanthk.pages.dev/writing/why-i-stopped-nila/) ·
 [Case study](https://vasanthk.pages.dev/work/nila/) ·
