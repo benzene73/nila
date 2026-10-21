@@ -8,9 +8,9 @@ firm would otherwise type up by hand.
 I built it on my own from June to October 2026, with a lot of help from coding
 agents. It runs in production at [nila.tax](https://nila.tax/) and worked on real
 bills, and I paused it on October 8 before any firm adopted it.
-[Why I stopped](https://vasanthk.pages.dev/writing/why-i-stopped-nila/) ·
-[Case study](https://vasanthk.pages.dev/work/nila/) ·
-[How the extraction works](https://vasanthk.pages.dev/writing/invoice-extraction/)
+[Why I stopped](https://benzene73.github.io/writing/why-i-stopped-nila/) ·
+[Case study](https://benzene73.github.io/work/nila/) ·
+[How the extraction works](https://benzene73.github.io/writing/invoice-extraction/)
 
 ![A 13-page PDF of scanned bills read into 13 invoices, each checked against its source page, then rolled up into GSTR-1 workings](docs/images/nila-review.gif)
 
